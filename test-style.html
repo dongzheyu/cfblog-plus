@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>样式加载测试</title>
+    <!-- 测试当前配置的样式链接 -->
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/dongzheyu/cfblog-plus@master/themes/JustNews/files/main.css' type='text/css' media='all' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/dongzheyu/cfblog-plus@master/themes/JustNews/files/font-awesome.css' type='text/css' media='all' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/dongzheyu/cfblog-plus@master/themes/JustNews/files/lazyload.css' type='text/css' media='all' />
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-box { 
+            border: 2px solid #007BFF; 
+            padding: 20px; 
+            margin: 10px 0; 
+            background-color: #f8f9fa; 
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>样式加载测试</h1>
+    
+    <div id="css-test" class="test-box">
+        <h2>CSS样式测试</h2>
+        <p>如果这个框有蓝色边框和灰色背景，说明CSS加载成功</p>
+    </div>
+    
+    <div id="js-test" class="test-box">
+        <h2>JavaScript测试</h2>
+        <p>如果这个框变成绿色，说明JavaScript加载成功</p>
+    </div>
+    
+    <div id="links-test" class="test-box">
+        <h2>资源链接测试</h2>
+        <div id="link-results"></div>
+    </div>
+
+    <script>
+        // 测试CSS是否加载
+        function testCSS() {
+            var testElement = document.getElementById('css-test');
+            var computedStyle = window.getComputedStyle(testElement);
+            var borderColor = computedStyle.borderColor;
+            
+            if (borderColor && borderColor !== 'rgba(0, 0, 0, 0)') {
+                testElement.className += ' success';
+                document.getElementById('css-test').innerHTML += '<br><strong style="color: green;">✓ CSS样式加载成功</strong>';
+            } else {
+                testElement.className += ' error';
+                document.getElementById('css-test').innerHTML += '<br><strong style="color: red;">✗ CSS样式加载失败</strong>';
+            }
+        }
+        
+        // 测试JavaScript是否加载
+        function testJS() {
+            var testElement = document.getElementById('js-test');
+            // 如果这个函数能执行，说明JS环境正常
+            testElement.className += ' success';
+            testElement.innerHTML += '<br><strong style="color: green;">✓ JavaScript环境正常</strong>';
+        }
+        
+        // 测试资源链接
+        function testLinks() {
+            var links = [
+                { name: 'main.css', url: 'https://cdn.jsdelivr.net/gh/dongzheyu/cfblog-plus@master/themes/JustNews/files/main.css' },
+                { name: 'font-awesome.css', url: 'https://cdn.jsdelivr.net/gh/dongzheyu/cfblog-plus@master/themes/JustNews/files/font-awesome.css' },
+                { name: 'lazyload.css', url: 'https://cdn.jsdelivr.net/gh/dongzheyu/cfblog-plus@master/themes/JustNews/files/lazyload.css' }
+            ];
+            
+            var results = document.getElementById('link-results');
+            var html = '<h3>资源加载状态：</h3>';
+            
+            links.forEach(function(link) {
+                var linkElement = document.createElement('link');
+                linkElement.rel = 'stylesheet';
+                linkElement.type = 'text/css';
+                linkElement.href = link.url;
+                
+                linkElement.onload = function() {
+                    html += '<p style="color: green;">✓ ' + link.name + ' - 加载成功</p>';
+                    results.innerHTML = html;
+                };
+                
+                linkElement.onerror = function() {
+                    html += '<p style="color: red;">✗ ' + link.name + ' - 加载失败</p>';
+                    results.innerHTML = html;
+                };
+                
+                document.head.appendChild(linkElement);
+            });
+        }
+        
+        // 页面加载完成后执行测试
+        window.onload = function() {
+            setTimeout(testCSS, 1000);  // 等待CSS加载
+            setTimeout(testJS, 500);    // 测试JS
+            setTimeout(testLinks, 2000); // 测试链接
+        };
+    </script>
+</body>
+</html>

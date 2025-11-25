@@ -1,0 +1,8 @@
+name = "cfblog-plus"
+main = "index_plus.js"
+compatibility_date = "2023-12-18"
+
+# 绑定KV命名空间
+[[kv_namespaces]]
+binding = "CFBLOG"  # 变量名
+id = "232473c7fa0d46b0845ad462b6fe0807"  # KV命名空间ID
