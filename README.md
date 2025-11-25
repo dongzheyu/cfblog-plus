@@ -1,56 +1,170 @@
-本项目**CFBlog-Plus**是由基于[gdtool/cloudflare-workers-blog](https://github.com/gdtool/cloudflare-workers-blog)二次开发而来，主要是对cf worker中的js进行自主开源，并扩展了许多功能。
+# BlogJetCPP
 
-## 与CF-Blog相比，有哪些变更：
+一个基于 Cloudflare Workers 的轻量级博客系统，支持 Markdown 编辑和管理员功能。
 
-1. 开源部署在workers中的js，根据自己的理解，进行自主开发并开源，详见[index_plus.js](https://github.com/Arronlong/cfblog-plus/blob/master/index_plus.js)
-2. 扩展md编辑器配置，可以自行根据需要修改配置。目前可配置支持html标签解析（默认关闭），更多设置参考[editormd官网](https://pandao.github.io/editor.md/)
-3. 后台新建页和编辑页，自动设置时间和默认图片(使用JustNews主题时必须设置，否则样式大变)，默认图片为：![](https://cdn.jsdelivr.net/gh/Arronlong/cdn@master/cfblog/cfblog-plus.png)
-4. 添加文章置顶设置功能
-5. 添加后台首页选择功能
-6. 添加文章隐藏功能
-7. 静态搜索
+## 特性
 
-一些功能还在规划中：
+- 🚀 基于 Cloudflare Workers，无需服务器
+- 📝 支持 Markdown 编辑和实时预览
+- 🔐 管理员账户系统
+- 📦 单文件部署，便于维护
+- 🌐 响应式设计，支持移动端
+- 📥 支持 GitHub 文件导入
+- 💾 基于 Cloudflare KV 数据持久化
 
-1. 文章独立密码
+## 技术栈
 
-## 演示地址: [https://blog.arrontg.cf](https://blog.arrontg.cf "cf-blog演示站点")
+- **运行环境**: Cloudflare Workers
+- **数据存储**: Cloudflare KV
+- **前端框架**: Bootstrap 5
+- **Markdown 解析**: Marked.js
+- **编辑器**: 原生 textarea + 实时预览
 
-## 部署教程:  [CFBlog-Plus搭建教程](https://blog.arrontg.cf/article/000004/.html)
+## 快速开始
 
-## 更新日志: [CFBLOG-PLUS更新日志](https://blog.arrontg.cf/article/000006/.html)
+### 前置要求
 
-**想了解index_plus.js的源码吗？看作者的源码解读文章《[解读CFBlog-Plus的源码](https://blog.arrontg.cf/article/000008/.html)》**
+1. Cloudflare 账号
+2. 自定义域名（可选）
 
----
+### 部署步骤
 
-> 这是一个运行在cloudflare workers 上的博客程序,使用 cloudflare KV作为数据库,无其他依赖.
-兼容静态博客的速度,以及动态博客的灵活性,方便搭建不折腾.
-演示地址: [https://blog.arrontg.cf](https://blog.arrontg.cf "cf-blog演示站点")，[https://blog.gezhong.vip](https://blog.gezhong.vip "cf-blog演示站点")
+1. **创建 Cloudflare Workers**
+   - 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+   - 进入 "Workers & Pages" 页面
+   - 点击 "Create Application"
+   - 选择 "Workers" 然后点击 "Create Worker"
 
-### 原CFBlog-TG 讨论群: [@CloudflareBlog](https://t.me/cloudflareblog )
-# 主要特点
-* 使用workers提供的KV作为数据库
-* 使用cloudflare缓存html来降低KV的读写
-* 所有html页面均为缓存,可达到静态博客的速度
-* 使用KV作为数据库,可达到wordpress的灵活性
-* 后台使用markdown语法,方便快捷
-* 一键发布(页面重构+缓存清理)
+2. **配置代码**
+   - 复制 `blog.js` 文件的内容到 Worker 编辑器
+   - 点击 "Save and Deploy"
 
-# 承载能力
+3. **配置 KV 存储**
+   - 在 Workers 页面，点击 "Settings" 标签
+   - 找到 "KV Namespace" 部分
+   - 点击 "Create namespace"
+   - 命名空间 ID: `blogjetcpp`
+   - 绑定变量名: `BLOG_KV`
 
- * KV基本不存在瓶颈,因为使用了缓存,读写很少
- * 唯一瓶颈是 workers的日访问量10w,大约能承受2万IP /日
- * 文章数:1G存储空间,几万篇问题不大
+4. **设置环境变量**
+   - 在 Settings 中找到 "Environment Variables"
+   - 添加以下变量：
+     ```
+     KV_NAMESPACE = blogjetcpp
+     ADMIN_PASSWORD = 你的管理员密码
+     GITHUB_TOKEN = 你的GitHub token（可选）
+     SITE_NAME = 你的博客名称
+     SITE_DESCRIPTION = 你的博客描述
+     ```
 
+5. **绑定自定义域名**（可选）
+   - 在 Workers 设置中，点击 "Triggers"
+   - 在 "Custom Domains" 部分添加你的域名
 
-# 原作者更新日志
+### 配置说明
 
-[CFBLOG更新日志](https://blog.gezhong.vip/article/009000/update-log.html)
+在 `blog.js` 文件的顶部，你可以修改以下配置：
 
+```javascript
+const CONFIG = {
+  KV_NAMESPACE: 'blogjetcpp',        // KV 命名空间
+  ADMIN_PASSWORD: 'admin123',        // 管理员密码（请修改）
+  GITHUB_TOKEN: '',                  // GitHub API token（可选）
+  SITE_NAME: 'BlogJetCPP',           // 网站名称
+  SITE_DESCRIPTION: '基于 Cloudflare Workers 的轻量级博客系统',
+  POSTS_PER_PAGE: 10                 // 每页文章数
+};
+```
 
-### 前端演示:
-![](https://s3.ax1x.com/2020/12/22/rrP81S.png)
+## 使用指南
 
-### 后端演示:
-![](https://s3.ax1x.com/2020/12/22/rrAWrD.png)
+### 管理博客
+
+1. **访问管理后台**
+   - 访问 `https://your-domain.com/admin`
+   - 输入管理员密码登录
+
+2. **创建文章**
+   - 点击 "新建文章"
+   - 填写标题、摘要和内容
+   - 支持 Markdown 语法
+   - 实时预览功能
+   - 点击 "发布文章"
+
+3. **编辑文章**
+   - 在管理面板中点击 "编辑"
+   - 修改内容后点击 "更新文章"
+
+4. **删除文章**
+   - 在管理面板中点击 "删除"
+   - 确认删除操作
+
+### GitHub 导入
+
+1. **获取 GitHub Token**（可选）
+   - 访问 GitHub Settings > Developer settings > Personal access tokens
+   - 创建新的 token，选择 `public_repo` 权限
+
+2. **导入文件**
+   - 在编辑器中输入 GitHub 文件路径：`用户名/仓库/文件路径`
+   - 点击 "导入" 按钮
+   - 系统会自动获取文件内容并填充到编辑器
+
+### Markdown 语法
+
+支持标准 Markdown 语法，包括：
+
+- 标题：`# 一级标题` 到 `###### 六级标题`
+- 粗体：`**粗体文本**`
+- 斜体：`*斜体文本*`
+- 链接：`[链接文本](https://example.com)`
+- 图片：`![图片描述](https://example.com/image.jpg)`
+- 代码块：```javascript\n代码内容\n```
+- 列表：`- 项目1` 或 `1. 项目1`
+
+## 常见问题
+
+### Q: 如何修改管理员密码？
+A: 在 `blog.js` 文件中修改 `CONFIG.ADMIN_PASSWORD` 的值，然后重新部署。
+
+### Q: 如何备份博客数据？
+A: Cloudflare KV 提供了数据导出功能，可以在 Cloudflare Dashboard 中导出数据。
+
+### Q: 支持多用户吗？
+A: 当前版本只支持单个管理员账户。
+
+### Q: 如何自定义样式？
+A: 可以修改 `HTML_TEMPLATES` 中的 CSS 样式部分。
+
+## 开发
+
+### 本地开发
+
+可以使用 [Wrangler](https://developers.cloudflare.com/workers/wrangler/) 进行本地开发：
+
+```bash
+# 安装 Wrangler
+npm install -g wrangler
+
+# 登录 Cloudflare
+wrangler login
+
+# 本地运行
+wrangler dev
+```
+
+### 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 许可证
+
+本项目基于 [MIT 许可证](LICENSE) 开源。
+
+版权所有 (c) 2025 JetCPP
+
+## 支持
+
+如果你觉得这个项目有用，请给个 ⭐️！
+
+遇到问题可以提交 [Issue](https://github.com/dongzheyu/cfblog-plus/issues)。
