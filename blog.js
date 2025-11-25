@@ -18,7 +18,7 @@ const CONFIG = {
   CLOUDFLARE_ZONE_ID: '' // 需要在部署时设置
 };
 
-// HTML 模板
+// HTML 模板 - 内嵌版本，不依赖外部资源
 const HTML_TEMPLATES = {
   header: (title = CONFIG.SITE_NAME) => `
 <!DOCTYPE html>
@@ -668,41 +668,6 @@ async function handleRequest(request, env) {
             );
         }
 
-        // 静态文件服务 - 提供 HTML 文件
-        if (path === '/index.html' || path === '/') {
-            // 尝试从 main 分支，如果失败则尝试 master 分支
-            let rawResponse;
-            try {
-                rawResponse = await fetch('https://raw.githubusercontent.com/dongzheyu/cfblog-plus/main/index.html');
-                if (!rawResponse.ok) {
-                    rawResponse = await fetch('https://raw.githubusercontent.com/dongzheyu/cfblog-plus/master/index.html');
-                }
-            } catch (e) {
-                rawResponse = await fetch('https://raw.githubusercontent.com/dongzheyu/cfblog-plus/master/index.html');
-            }
-            const htmlContent = await rawResponse.text();
-            return new Response(htmlContent, { 
-                headers: { 'Content-Type': 'text/html' } 
-            });
-        }
-        
-        if (path === '/admin' || path === '/admin.html') {
-            // 尝试从 main 分支，如果失败则尝试 master 分支
-            let rawResponse;
-            try {
-                rawResponse = await fetch('https://raw.githubusercontent.com/dongzheyu/cfblog-plus/main/admin.html');
-                if (!rawResponse.ok) {
-                    rawResponse = await fetch('https://raw.githubusercontent.com/dongzheyu/cfblog-plus/master/admin.html');
-                }
-            } catch (e) {
-                rawResponse = await fetch('https://raw.githubusercontent.com/dongzheyu/cfblog-plus/master/admin.html');
-            }
-            const htmlContent = await rawResponse.text();
-            return new Response(htmlContent, { 
-                headers: { 'Content-Type': 'text/html' } 
-            });
-        }
-
         // 管理员相关路由
         if (path.startsWith('/admin')) {
             // 登录页面
@@ -875,12 +840,12 @@ async function handleRequest(request, env) {
 
             // 创建文章
             if (path === '/admin/create' && method === 'POST') {
-                const formData = await request.json();
-                const title = formData.title;
-                const content = formData.content;
-                const summary = formData.summary;
-                const category = formData.category;
-                const coverImageUrl = formData.cover_image;
+                const formData = await request.formData();
+                const title = formData.get('title');
+                const content = formData.get('content');
+                const summary = formData.get('summary');
+                const category = formData.get('category');
+                const coverImageUrl = formData.get('cover_image_url');
                 
                 const slug = generateSlug(title);
                 const post = {
@@ -891,8 +856,8 @@ async function handleRequest(request, env) {
                     category,
                     cover_image: coverImageUrl || null,
                     slug,
-                    created_at: formData.created_at || new Date().toISOString(),
-                    updated_at: formData.updated_at || null
+                    created_at: new Date().toISOString(),
+                    updated_at: null
                 };
                 
                 await env.BLOG_KV.put(`post_${slug}`, JSON.stringify(post));
@@ -909,12 +874,12 @@ async function handleRequest(request, env) {
             // 更新文章
             if (path.startsWith('/admin/update/') && method === 'POST') {
                 const slug = path.replace('/admin/update/', '');
-                const formData = await request.json();
-                const title = formData.title;
-                const content = formData.content;
-                const summary = formData.summary;
-                const category = formData.category;
-                const coverImageUrl = formData.cover_image;
+                const formData = await request.formData();
+                const title = formData.get('title');
+                const content = formData.get('content');
+                const summary = formData.get('summary');
+                const category = formData.get('category');
+                const coverImageUrl = formData.get('cover_image_url');
                 
                 const existingPost = await getPost(env.BLOG_KV, slug);
                 if (!existingPost) {
@@ -958,32 +923,12 @@ async function handleRequest(request, env) {
                 const { path: githubPath } = await request.json();
                 
                 try {
-                    // 使用你的 GitHub 仓库地址
-                    const githubUrl = `https://raw.githubusercontent.com/dongzheyu/cfblog-plus/main/${githubPath}`;
-                    const headers = CONFIG.GITHUB_TOKEN ? 
-                        { 'Authorization': `token ${CONFIG.GITHUB_TOKEN}` } : {};
-                    
-                    const response = await fetch(githubUrl, { headers });
+                    // 使用 raw.githubusercontent.com 直接获取文件内容
+                    const githubUrl = `https://raw.githubusercontent.com/\${githubPath}`;
+                    const response = await fetch(githubUrl);
                     
                     if (!response.ok) {
-                        // 如果 main 分支失败，尝试 master 分支
-                        const fallbackUrl = `https://raw.githubusercontent.com/dongzheyu/cfblog-plus/master/${githubPath}`;
-                        const fallbackResponse = await fetch(fallbackUrl, { headers });
-                        
-                        if (!fallbackResponse.ok) {
-                            throw new Error(`GitHub 请求失败: ${response.status} ${response.statusText}`);
-                        }
-                        
-                        const content = await fallbackResponse.text();
-                        const title = githubPath.split('/').pop().replace(/\.[^/.]+$/, '');
-                        
-                        return new Response(JSON.stringify({
-                            success: true,
-                            content,
-                            title
-                        }), {
-                            headers: { 'Content-Type': 'application/json' }
-                        });
+                        throw new Error(\`GitHub 请求失败: \${response.status} \${response.statusText}\`);
                     }
                     
                     const content = await response.text();

@@ -1,0 +1,22 @@
+# Cloudflare Pages 配置文件
+
+# 项目名称
+name = "blogjetcpp"
+
+# 构建设置
+[build]
+command = "echo 'No build required for static site'"
+output = "."
+
+# 环境变量（在 Cloudflare Pages 控制台中设置）
+# CLOUDFLARE_API_TOKEN
+# GITHUB_TOKEN
+
+# 函数路径
+[functions]
+directory = "functions"
+
+# 路由处理
+[[routes]]
+pattern = "/api/*"
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
