@@ -9,14 +9,6 @@ export async function onRequest(context) {
     const path = url.pathname;
     const method = request.method;
 
-    // 配置常量
-    const CONFIG = {
-        ADMIN_PASSWORD: 'DZY@013520',
-        GITHUB_REPO: 'https://api.github.com/repos/dongzheyu/cfblog-plus/contents/posts.json',
-        CLOUDFLARE_API_TOKEN: 'ATaK2uKHzBKMdIQBMp21ctiw0pHo8uXiBnnReS1s',
-        CLOUDFLARE_ZONE_ID: ''
-    };
-
     try {
         // 处理管理相关的 API 请求
         if (path.startsWith('/api/admin')) {
@@ -39,11 +31,8 @@ export async function onRequest(context) {
                 await savePosts(context.env, posts);
                 
                 // 尝试同步到 GitHub
-                await syncToGitHub(posts, context.env.GITHUB_TOKEN);
-                
-                // 清理缓存
-                if (CONFIG.CLOUDFLARE_ZONE_ID) {
-                    await clearCache();
+                if (context.env.GITHUB_TOKEN) {
+                    await syncToGitHub(posts, context.env.GITHUB_TOKEN);
                 }
                 
                 return new Response(JSON.stringify({ success: true }), {
@@ -63,7 +52,9 @@ export async function onRequest(context) {
                 const posts = await getPosts(context.env);
                 
                 // 同步到 GitHub
-                await syncToGitHub(posts, context.env.GITHUB_TOKEN);
+                if (context.env.GITHUB_TOKEN) {
+                    await syncToGitHub(posts, context.env.GITHUB_TOKEN);
+                }
                 
                 return new Response(JSON.stringify({ 
                     success: true, 
@@ -88,7 +79,9 @@ export async function onRequest(context) {
             }
 
             try {
-                await clearCache();
+                if (context.env.CLOUDFLARE_ZONE_ID && context.env.CLOUDFLARE_API_TOKEN) {
+                    await clearCache(context.env.CLOUDFLARE_ZONE_ID, context.env.CLOUDFLARE_API_TOKEN);
+                }
                 return new Response(JSON.stringify({ 
                     success: true, 
                     message: '缓存清理成功' 
@@ -115,10 +108,9 @@ export async function onRequest(context) {
 
 // 检查管理员身份
 function isAdmin(request) {
-    // 这里可以实现更复杂的认证逻辑
-    // 目前简单检查请求头中是否包含管理员令牌
+    // 检查请求头中是否包含管理员令牌
     const authHeader = request.headers.get('Authorization');
-    return authHeader === `Bearer ${btoa('admin:DZY@013520')}`;
+    return authHeader === `Bearer DZY@013520`;
 }
 
 // 从 KV 获取文章
@@ -143,6 +135,23 @@ async function syncToGitHub(posts, githubToken) {
         throw new Error('未配置 GitHub Token');
     }
 
+    // 首先获取当前文件信息以获取 SHA
+    let sha = null;
+    try {
+        const infoResponse = await fetch('https://api.github.com/repos/dongzheyu/cfblog-plus/contents/posts.json', {
+            headers: {
+                'Authorization': `token ${githubToken}`
+            }
+        });
+        
+        if (infoResponse.ok) {
+            const info = await infoResponse.json();
+            sha = info.sha;
+        }
+    } catch (error) {
+        console.log('获取文件信息失败，将创建新文件');
+    }
+
     const content = btoa(JSON.stringify(posts, null, 2));
     
     // 发送到 GitHub
@@ -155,26 +164,22 @@ async function syncToGitHub(posts, githubToken) {
         body: JSON.stringify({
             message: 'Update posts via Cloudflare Pages',
             content: content,
-            // 这里可能需要提供当前文件的 SHA，需要先获取文件信息
+            sha: sha // 如果是新文件，这个值为 null，GitHub 会创建新文件
         })
     });
 
     if (!response.ok) {
-        throw new Error(`GitHub 同步失败: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(`GitHub 同步失败: ${response.statusText}, ${JSON.stringify(errorData)}`);
     }
 }
 
 // 清理 Cloudflare 缓存
-async function clearCache() {
-    if (!CONFIG.CLOUDFLARE_ZONE_ID || !CONFIG.CLOUDFLARE_API_TOKEN) {
-        console.log('未配置 Cloudflare 信息，跳过缓存清理');
-        return;
-    }
-
-    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${CONFIG.CLOUDFLARE_ZONE_ID}/purge_cache`, {
+async function clearCache(zoneId, apiToken) {
+    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${CONFIG.CLOUDFLARE_API_TOKEN}`,
+            'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
