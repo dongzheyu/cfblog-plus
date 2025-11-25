@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions - BlogJetCPP
- * 用于处理 GitHub 同步和 KV 存储
+ * 用于处理 API 请求和 GitHub 同步
  */
 
 export async function onRequest(context) {
@@ -19,8 +19,9 @@ export async function onRequest(context) {
 
             // 获取文章数据
             if (path === '/api/admin/posts' && method === 'GET') {
-                const posts = await getPosts(context.env);
-                return new Response(JSON.stringify(posts), {
+                // 对于 Pages，我们从环境变量获取初始数据，但主要依赖前端的 localStorage
+                // 这里返回一个空数组，因为数据主要存储在客户端
+                return new Response(JSON.stringify([]), {
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
@@ -28,11 +29,15 @@ export async function onRequest(context) {
             // 保存文章数据
             if (path === '/api/admin/posts' && method === 'POST') {
                 const posts = await request.json();
-                await savePosts(context.env, posts);
                 
                 // 尝试同步到 GitHub
                 if (context.env.GITHUB_TOKEN) {
-                    await syncToGitHub(posts, context.env.GITHUB_TOKEN);
+                    try {
+                        await syncToGitHub(posts, context.env.GITHUB_TOKEN);
+                    } catch (error) {
+                        console.error('GitHub 同步失败:', error);
+                        // 即使同步失败，也返回成功，因为主要数据在客户端
+                    }
                 }
                 
                 return new Response(JSON.stringify({ success: true }), {
@@ -48,8 +53,7 @@ export async function onRequest(context) {
             }
 
             try {
-                // 从 KV 获取最新文章
-                const posts = await getPosts(context.env);
+                const posts = await request.json();
                 
                 // 同步到 GitHub
                 if (context.env.GITHUB_TOKEN) {
@@ -111,22 +115,6 @@ function isAdmin(request) {
     // 检查请求头中是否包含管理员令牌
     const authHeader = request.headers.get('Authorization');
     return authHeader === `Bearer DZY@013520`;
-}
-
-// 从 KV 获取文章
-async function getPosts(env) {
-    if (env.BLOG_KV) {
-        const data = await env.BLOG_KV.get('posts');
-        return data ? JSON.parse(data) : [];
-    }
-    return [];
-}
-
-// 保存文章到 KV
-async function savePosts(env, posts) {
-    if (env.BLOG_KV) {
-        await env.BLOG_KV.put('posts', JSON.stringify(posts));
-    }
 }
 
 // 同步到 GitHub
