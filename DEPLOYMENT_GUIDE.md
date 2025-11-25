@@ -11,7 +11,7 @@ BlogJetCPP - 基于 Cloudflare Pages 构建的现代化博客系统
    - `index.html` - 前台博客页面
    - `admin.html` - 管理后台页面
    - `_worker.js` - Cloudflare Pages Functions
-   - `wrangler.toml` - 配置文件
+   - `wrangler.jsonc` - 配置文件
 
 ### 2. 在 Cloudflare Pages 上创建项目
 1. 登录 Cloudflare Dashboard
@@ -106,6 +106,11 @@ GITHUB_TOKEN=您的GitHub个人访问令牌
 4. **GitHub 同步失败**:
    - 验证 GitHub 令牌权限
    - 确认仓库路径正确
+
+### 构建错误解决
+如果遇到构建错误 "Missing entry-point to Worker script":
+- 确保使用 `wrangler.jsonc` 而不是 `wrangler.toml`
+- 配置文件应指定 assets 模式而不是 main 入口点
 
 ### 性能优化
 - 启用 Cloudflare 的自动压缩
